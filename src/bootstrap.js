@@ -1,3 +1,4 @@
+// @flow
 /* eslint-env node */
 /* eslint-disable no-console*/
 const fs = require('fs');
@@ -12,8 +13,8 @@ const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 
 module.exports.getPackages = async (
-  root = 'packages',
-  additionalRepos = []
+  root: string = 'packages',
+  additionalRepos: Array<string> = []
 ) => {
   const options = {cwd: root};
   const reset = `
@@ -41,7 +42,7 @@ module.exports.getPackages = async (
     allPackages.push(`${repo.upstream}/${repo.name}`);
     const {upstream, name} = repo;
     const dir = `${upstream}/${name}`;
-    if (!(await isFile(`${root}/${dir}/package.json`))) {
+    if (!await isFile(`${root}/${dir}/package.json`)) {
       const url = `https://github.com/${dir}.git`;
       await exec(`git clone --depth 1 ${url} ${dir}`, options);
     } else await exec(reset, {cwd: `${root}/${dir}`});
@@ -52,10 +53,11 @@ module.exports.getPackages = async (
     if (additionalRepos && additionalRepos.length) {
       for (let i = 0; i < additionalRepos.length; i++) {
         const parts = /([a-z0-9\-_]+)\/([a-z0-9\-_]+)$/i;
+        // $FlowFixMe
         const [, owner, name] = additionalRepos[i].match(parts);
         const dir = `${owner}/${name}`;
         const url = additionalRepos[i];
-        if (!(await isFile(`${root}/${dir}/package.json`))) {
+        if (!await isFile(`${root}/${dir}/package.json`)) {
           await exec(`git clone --depth 1 ${url} ${dir}`, options);
         } else await exec(reset, {cwd: `${root}/${dir}`});
         allPackages.push(dir);
@@ -66,7 +68,10 @@ module.exports.getPackages = async (
   return allPackages;
 };
 
-module.exports.bootstrap = async (allPackages, root = 'packages') => {
+module.exports.bootstrap = async (
+  allPackages: Array<string>,
+  root: string = 'packages'
+) => {
   const options = {cwd: root};
 
   console.log('Installing dependencies');
@@ -127,7 +132,7 @@ module.exports.bootstrap = async (allPackages, root = 'packages') => {
       const cwd = [`${root}/node_modules`, rest].join('/');
       if (isNamespaced) await exec(`mkdir -p ${cwd}`);
       const rel = isNamespaced ? '../..' : '..';
-      if (!(await isSymlink(`${cwd}/${name}`))) {
+      if (!await isSymlink(`${cwd}/${name}`)) {
         await exec(`ln -sfn ${rel}/${dir}/ ${name}`, {cwd});
       }
 
@@ -136,14 +141,14 @@ module.exports.bootstrap = async (allPackages, root = 'packages') => {
       for (const d of dirs) {
         if (d === dir) continue;
         const opts = {cwd: `${root}/${dir}/node_modules`};
-        if (!(await isSymlink(`${opts}/${d}`))) {
+        if (!await isSymlink(`${opts.cwd}/${d}`)) {
           await exec(`ln -sfn ../../../node_modules/${d}/ ${d}`, opts);
         }
       }
 
       if (meta.bin) {
         for (const key in meta.bin) {
-          if (!(await isSymlink(`${root}/node_modules/.bin/${key}`))) {
+          if (!await isSymlink(`${root}/node_modules/.bin/${key}`)) {
             await exec(`ln -sfn ../../${dir}/${meta.bin[key]} ${key}`, {
               cwd: `${root}/node_modules/.bin/`,
             });

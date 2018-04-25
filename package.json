@@ -16,6 +16,7 @@
   "dependencies": {
     "@octokit/rest": "^15.2.6",
     "chalk": "^2.3.1",
+    "flow-bin": "^0.70.0",
     "fusion-orchestrate": "^1.0.4",
     "lerna": "^2.9.0",
     "shelljs": "^0.8.1"
